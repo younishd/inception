@@ -1,0 +1,4 @@
+name: InceptionPlugin
+main: fr.younishd.inception.InceptionPlugin
+version: ${version}
+author: neoprene
