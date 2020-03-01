@@ -1,9 +1,10 @@
 package fr.younishd.inception;
 
-import org.bukkit.Location;
-import org.bukkit.World;
-import org.bukkit.WorldCreator;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.PlayerInventory;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -117,6 +118,7 @@ public class DreamDimension {
 
             WorldCreator c = new WorldCreator("world_dream_" + this.owner.getPlayer().getName() + "_level_" + level);
             c.generateStructures(false);
+            c.type(WorldType.FLAT);
             this.worlds.put(level, this.owner.getPlayer().getServer().createWorld(c));
         }
 
@@ -146,8 +148,11 @@ public class DreamDimension {
             }
 
             dreamer.pushBed(bed);
+            dreamer.pushInventory();
             this.logger.info("Teleport " + player.getName() + " to " + this.owner.getPlayer().getName() + "'s dream world level " + dreamer.getLevel() + ".");
             player.teleport(this.worlds.get(dreamer.getLevel()).getSpawnLocation());
+
+            ++this.levels;
 
             this.prepareLevel(this.owner.getLevel() + 1);
 
@@ -172,8 +177,11 @@ public class DreamDimension {
             }
 
             this.logger.info("Teleport " + player.getName() + " back to level " + (dreamer.getLevel() - 1) + ".");
+            dreamer.popInventory();
             Location exit = dreamer.popBed();
             player.teleport(exit);
+
+            --this.levels;
 
             if (player.getName().equals(this.owner.getPlayer().getName())) {
                 this.logger.info("Player " + player.getName() + " is the dream owner.");
@@ -210,11 +218,13 @@ public class DreamDimension {
         private final Logger logger;
         private Player player;
         private Stack<Location> beds;
+        private Stack<Inventory> inventories;
 
         public Dreamer(Player player, Logger logger) {
             this.player = player;
             this.logger = logger;
             this.beds = new Stack<>();
+            this.inventories = new Stack<>();
         }
 
         public void pushBed(Location bed) {
@@ -226,6 +236,19 @@ public class DreamDimension {
             Location bed = this.beds.pop();
             this.logger.info("pop bed " + bed.getWorld().getName() + " (" + bed.getX() + ", " + bed.getY() + ", " + bed.getZ() + ")");
             return bed;
+        }
+
+        public void pushInventory() {
+            Inventory inv = Bukkit.createInventory(null, InventoryType.PLAYER);
+            inv.setContents(this.player.getInventory().getContents());
+            this.player.getInventory().clear();
+            this.inventories.push(inv);
+            this.logger.info("push inventory");
+        }
+
+        public void popInventory() {
+            this.logger.info("pop inventory");
+            this.player.getInventory().setContents(this.inventories.pop().getContents());
         }
 
         public int getLevel() {
